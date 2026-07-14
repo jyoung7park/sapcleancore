@@ -22,15 +22,24 @@ export function Explorer() {
   const [system, setSystem] = useState("S/4HANA 2025");
   const [product, setProduct] = useState("Private Edition");
   const [exporting, setExporting] = useState(false);
+  const [exportLevel, setExportLevel] = useState<"ALL" | "A" | "B" | "C">("ALL");
+  const [counts, setCounts] = useState({ A: 0, B: 0, C: 0 });
 
   useEffect(() => {
     const urlQuery = new URLSearchParams(window.location.search).get("q");
     if (urlQuery) runSearch(urlQuery);
   }, []);
 
-  async function runSearch(value: string, nextLevel = level) {
+  useEffect(() => {
+    const params = new URLSearchParams({ q: "", level: "ALL", system, product });
+    fetch(`/api/v1/objects/search?${params}`).then((response) => response.json()).then((data) => {
+      if (data.counts) setCounts(data.counts);
+    });
+  }, [system, product]);
+
+  async function runSearch(value: string, nextLevel = level, nextSystem = system, nextProduct = product) {
     setQuery(value); setLoading(true);
-    const params = new URLSearchParams({ q: value, level: nextLevel });
+    const params = new URLSearchParams({ q: value, level: nextLevel, system: nextSystem, product: nextProduct });
     const response = await fetch(`/api/v1/objects/search?${params}`);
     const data = await response.json();
     setItems(data.items); setExpanded(data.expandedTerms); setSearched(true); setLoading(false);
@@ -42,10 +51,7 @@ export function Explorer() {
   async function exportExcel() {
     setExporting(true);
     try {
-      const response = await fetch("/api/v1/objects/search?q=&level=ALL");
-      if (!response.ok) throw new Error("Failed to load objects");
-      const data = await response.json();
-      await downloadObjectsExcel(data.items);
+      await downloadObjectsExcel({ system, product }, exportLevel);
     } finally {
       setExporting(false);
     }
@@ -60,12 +66,12 @@ export function Explorer() {
         <h1>SAP 객체, <span>더 이상 추측하지 마세요.</span></h1>
         <p>Released 상태부터 Clean Core Level, 대체 API까지<br />하나의 검색으로 확인하세요.</p>
         <form className="search-box" onSubmit={submit}><Search size={23} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="VBAK, CL_BCS, BAPI, 판매오더 생성 등을 검색하세요" autoFocus /><button type="submit">검색 <ArrowRight size={17} /></button></form>
-        <div className="selectors"><label>시스템 <span className="select-wrap"><select value={system} onChange={(event) => setSystem(event.target.value)}><option>S/4HANA 2025</option><option>S/4HANA 2023</option><option>S/4HANA 2022</option></select><ChevronDown size={14} /></span></label><label>제품 <span className="select-wrap"><select value={product} onChange={(event) => setProduct(event.target.value)}><option>Private Edition</option><option>Public Edition</option></select><ChevronDown size={14} /></span></label></div><button className="excel-download" onClick={exportExcel} disabled={exporting}><Download size={15} /> {exporting ? "Excel 생성 중..." : "A·B·C 전체 Excel"}</button>
+        <div className="selectors"><label>시스템 <span className="select-wrap"><select value={system} onChange={(event) => { const value = event.target.value; setSystem(value); if (searched) runSearch(query, level, value, product); }}><option>S/4HANA 2025</option><option>S/4HANA 2023</option><option>S/4HANA 2022</option></select><ChevronDown size={14} /></span></label><label>제품 <span className="select-wrap"><select value={product} onChange={(event) => { const value = event.target.value; setProduct(value); if (searched) runSearch(query, level, system, value); }}><option>Private Edition</option><option>Public Edition</option></select><ChevronDown size={14} /></span></label></div><button className="excel-download" onClick={exportExcel} disabled={exporting}><Download size={15} /> {exporting ? "Excel 생성 중..." : "A·B·C 전체 Excel"}</button>
         {!searched && <div className="quick"><span>빠른 검색</span>{quickTerms.map((term) => <button key={term} onClick={() => runSearch(term)}>{term}</button>)}</div>}
       </section>
 
       {!searched ? <>
-        <section className="summary"><div><span className="metric-label level-a">A</span><p><strong>32,140</strong><small>Released APIs</small></p></div><div><span className="metric-label level-b">B</span><p><strong>8,420</strong><small>Classic APIs</small></p></div><div><span className="metric-label level-c">C</span><p><strong>41,230</strong><small>Internal Objects</small></p></div><div className="source"><Database size={19} /><p><strong>2026. 07. 14.</strong><small>데이터 업데이트</small></p></div></section>
+        <section className="summary"><div><span className="metric-label level-a">A</span><p><strong>{counts.A.toLocaleString()}</strong><small>Released APIs</small></p></div><div><span className="metric-label level-b">B</span><p><strong>{counts.B.toLocaleString()}</strong><small>Classic APIs</small></p></div><div><span className="metric-label level-c">C</span><p><strong>{counts.C.toLocaleString()}</strong><small>Internal Objects</small></p></div><div className="source"><Database size={19} /><p><strong>2026. 07. 14.</strong><small>데이터 업데이트</small></p></div></section>
         <section className="how"><div><span>01</span><Search /><h3>객체 또는 업무용어 검색</h3><p>ObjectKey, 객체명, 한글 업무용어를 모두 검색합니다.</p></div><div><span>02</span><ShieldCheck /><h3>Clean Core 상태 확인</h3><p>릴리스 상태를 Level A부터 D까지 명확하게 구분합니다.</p></div><div><span>03</span><Sparkles /><h3>Successor로 전환</h3><p>대체 가능한 CDS, RAP BO, Remote API를 비교합니다.</p></div></section>
       </> : <section className="results">
         <div className="result-head"><div><span>SEARCH RESULTS</span><h2>“{query}” <small>{items.length}개 객체</small></h2>{expanded.length > 0 && <p>검색 확장: {expanded.slice(0, 4).join(" · ")}</p>}</div><div className="filters"><select value={level} onChange={(event) => changeLevel(event.target.value)}><option value="ALL">모든 Level</option><option value="A">Level A</option><option value="B">Level B</option><option value="C">Level C</option></select><button onClick={() => items[0] && setSelected(items[0])} disabled={!items.length}><GitCompareArrows size={15} /> 릴리스 비교</button></div></div>
