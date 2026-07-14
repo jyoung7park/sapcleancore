@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+import { expandQuery } from "@/lib/dictionary";
 import { getSapSourceUrls, mergeByLevel, scoreSapObject, type SapSourceObject } from "@/lib/sap-sources";
 
 async function loadJson(url: string, key: "objectReleaseInfo" | "objectClassifications") {
@@ -23,8 +24,9 @@ export async function GET(request: NextRequest) {
       loadJson(urls.classification, "objectClassifications"),
     ]);
     const all = mergeByLevel(releaseItems, classificationItems);
+    const expandedTerms = expandQuery(q);
     const filtered = all
-      .map((item) => ({ item, score: scoreSapObject(item, q) }))
+      .map((item) => ({ item, score: Math.max(...expandedTerms.map((term, index) => Math.max(0, scoreSapObject(item, term) - index * 10))) }))
       .filter(({ item, score }) => (level === "ALL" || item.level === level) && score > 0)
       .sort((left, right) => right.score - left.score || (left.item.objectKey ?? "").localeCompare(right.item.objectKey ?? ""))
       .slice(0, 200)
@@ -52,7 +54,7 @@ export async function GET(request: NextRequest) {
       }),
       releaseHistory: { [system.replace("S/4HANA ", "")]: item.state ?? "UNKNOWN" },
     }));
-    return NextResponse.json({ query: q, product, release: system, total: all.length, counts: { A: all.filter((item) => item.level === "A").length, B: all.filter((item) => item.level === "B").length, C: all.filter((item) => item.level === "C").length }, items, expandedTerms: [] }, { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } });
+    return NextResponse.json({ query: q, product, release: system, total: all.length, counts: { A: all.filter((item) => item.level === "A").length, B: all.filter((item) => item.level === "B").length, C: all.filter((item) => item.level === "C").length }, items, expandedTerms: expandedTerms.slice(1) }, { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 502 });
   }
