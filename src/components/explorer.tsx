@@ -1,10 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { ArrowRight, BookOpen, Box, ChevronDown, CircleHelp, Database, GitCompareArrows, Menu, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, BookOpen, Box, ChevronDown, CircleHelp, Database, GitCompareArrows, Download, Menu, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { ObjectDetail } from "./object-detail";
 import { StatusBadge } from "./status-badge";
 import type { SapObject } from "@/types/object";
+import { downloadObjectsExcel } from "@/lib/excel-download";
 
 const quickTerms = ["판매오더", "구매오더", "자재 이동", "회계전표", "메일"];
 
@@ -20,6 +21,7 @@ export function Explorer() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [system, setSystem] = useState("S/4HANA 2025");
   const [product, setProduct] = useState("Private Edition");
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const urlQuery = new URLSearchParams(window.location.search).get("q");
@@ -37,6 +39,17 @@ export function Explorer() {
 
   function submit(event: FormEvent) { event.preventDefault(); runSearch(query); }
   function changeLevel(value: string) { setLevel(value); if (searched) runSearch(query, value); }
+  async function exportExcel() {
+    setExporting(true);
+    try {
+      const response = await fetch("/api/v1/objects/search?q=&level=ALL");
+      if (!response.ok) throw new Error("Failed to load objects");
+      const data = await response.json();
+      await downloadObjectsExcel(data.items);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return <div className="app-shell">
     <header><a className="brand" href="/"><span className="brand-mark"><Box size={19} /></span><span><b>CCOE</b><small>Clean Core Object Explorer</small></span></a><nav className={mobileOpen ? "open" : ""}><button className="active" onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); }}>객체 검색</button><button onClick={() => { runSearch("Successor"); setMobileOpen(false); }}>Successor</button><button onClick={() => { runSearch(""); setMobileOpen(false); }}>릴리스 비교</button><button onClick={() => { setHelpOpen(true); setMobileOpen(false); }}>Clean Core 가이드</button></nav><div className="header-actions"><span className="data-live"><i /> PCE 2025</span><button className="icon-button" onClick={() => setHelpOpen(true)} aria-label="도움말 열기"><CircleHelp size={19} /></button><button className="mobile-menu" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-label="메뉴 열기"><Menu size={20} /></button></div></header>
@@ -47,7 +60,7 @@ export function Explorer() {
         <h1>SAP 객체, <span>더 이상 추측하지 마세요.</span></h1>
         <p>Released 상태부터 Clean Core Level, 대체 API까지<br />하나의 검색으로 확인하세요.</p>
         <form className="search-box" onSubmit={submit}><Search size={23} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="VBAK, CL_BCS, BAPI, 판매오더 생성 등을 검색하세요" autoFocus /><button type="submit">검색 <ArrowRight size={17} /></button></form>
-        <div className="selectors"><label>시스템 <span className="select-wrap"><select value={system} onChange={(event) => setSystem(event.target.value)}><option>S/4HANA 2025</option><option>S/4HANA 2023</option><option>S/4HANA 2022</option></select><ChevronDown size={14} /></span></label><label>제품 <span className="select-wrap"><select value={product} onChange={(event) => setProduct(event.target.value)}><option>Private Edition</option><option>Public Edition</option></select><ChevronDown size={14} /></span></label></div>
+        <div className="selectors"><label>시스템 <span className="select-wrap"><select value={system} onChange={(event) => setSystem(event.target.value)}><option>S/4HANA 2025</option><option>S/4HANA 2023</option><option>S/4HANA 2022</option></select><ChevronDown size={14} /></span></label><label>제품 <span className="select-wrap"><select value={product} onChange={(event) => setProduct(event.target.value)}><option>Private Edition</option><option>Public Edition</option></select><ChevronDown size={14} /></span></label></div><button className="excel-download" onClick={exportExcel} disabled={exporting}><Download size={15} /> {exporting ? "Excel 생성 중..." : "A·B·C 전체 Excel"}</button>
         {!searched && <div className="quick"><span>빠른 검색</span>{quickTerms.map((term) => <button key={term} onClick={() => runSearch(term)}>{term}</button>)}</div>}
       </section>
 
