@@ -18,6 +18,17 @@ async function fetchSource(url: string, key: "objectReleaseInfo" | "objectClassi
   return data[key] as SapSourceObject[];
 }
 
+function formatSuccessors(item: SapSourceObject) {
+  if (item.successorConceptName) return item.successorConceptName;
+  if (!item.successors?.length) return "N/A";
+  return item.successors.map((successor) => {
+    if (typeof successor === "string") return successor;
+    const name = successor.objectKey ?? successor.tadirObjName ?? "Unknown";
+    const type = successor.objectType ?? successor.tadirObject;
+    return type ? `${name} (${type})` : name;
+  }).join(" | ");
+}
+
 export async function downloadObjectsExcel(selection: SourceSelection, requestedLevel: "ALL" | "A" | "B" | "C") {
   const urls = getSapSourceUrls(selection);
   const [releaseItems, classificationItems, ExcelJS] = await Promise.all([
@@ -32,7 +43,7 @@ export async function downloadObjectsExcel(selection: SourceSelection, requested
     const items = all.filter((item) => item.level === level);
     const sheet = workbook.addWorksheet(`Level ${level} (${items.length})`, { views: [{ state: "frozen", ySplit: 1 }] });
     sheet.columns = columns;
-    items.forEach((item) => sheet.addRow({ ...item, successor: item.successorConceptName ?? item.successors?.join(" | ") ?? "", labels: item.labels?.join(", ") ?? "" }));
+    items.forEach((item) => sheet.addRow({ ...item, successor: formatSuccessors(item), labels: item.labels?.length ? item.labels.join(", ") : "N/A" }));
     sheet.autoFilter = { from: "A1", to: "J1" };
     sheet.getRow(1).height = 28;
     sheet.getRow(1).eachCell((cell) => { cell.font = { bold: true, color: { argb: "FFFFFFFF" } }; cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1677B8" } }; });

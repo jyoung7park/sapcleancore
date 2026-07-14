@@ -37,7 +37,12 @@ export type SapSourceObject = {
   state?: string;
   successorClassification?: string;
   successorConceptName?: string;
-  successors?: string[];
+  successors?: Array<string | {
+    tadirObject?: string;
+    tadirObjName?: string;
+    objectType?: string;
+    objectKey?: string;
+  }>;
   labels?: string[];
 };
 
@@ -51,8 +56,21 @@ export function mergeByLevel(releaseItems: SapSourceObject[], classificationItem
     if (item.state === "classicAPI" && !result.has(key(item))) result.set(key(item), { ...item, level: "B" });
   }
   for (const item of [...releaseItems, ...classificationItems]) {
-    if (["notToBeReleased", "notToBeReleasedStable", "noAPI"].includes(item.state ?? "") && !result.has(key(item))) {
-      result.set(key(item), { ...item, level: "C" });
+    if (["notToBeReleased", "notToBeReleasedStable", "noAPI"].includes(item.state ?? "")) {
+      const itemKey = key(item);
+      const existing = result.get(itemKey);
+      if (!existing) {
+        result.set(itemKey, { ...item, level: "C" });
+      } else if (existing.level === "C") {
+        result.set(itemKey, {
+          ...existing, ...item,
+          objectKey: existing.objectKey ?? item.objectKey,
+          successors: existing.successors ?? item.successors,
+          successorConceptName: existing.successorConceptName ?? item.successorConceptName,
+          labels: item.labels ?? existing.labels,
+          level: "C",
+        });
+      }
     }
   }
   return [...result.values()];
