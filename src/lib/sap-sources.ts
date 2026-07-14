@@ -48,7 +48,7 @@ export type SapSourceObject = {
 
 export function mergeByLevel(releaseItems: SapSourceObject[], classificationItems: SapSourceObject[]) {
   const result = new Map<string, SapSourceObject & { level: "A" | "B" | "C" }>();
-  const key = (item: SapSourceObject) => `${item.tadirObject ?? ""}|${item.tadirObjName ?? item.objectKey ?? ""}`;
+  const key = (item: SapSourceObject) => `${item.objectType ?? item.tadirObject ?? ""}|${item.objectKey ?? item.tadirObjName ?? ""}`;
   for (const item of releaseItems) {
     if (item.state === "released") result.set(key(item), { ...item, level: "A" });
   }

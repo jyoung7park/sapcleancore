@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       objectType: item.objectType ?? item.tadirObject ?? "",
       tadirObject: item.tadirObject ?? "",
       tadirObjName: item.tadirObjName ?? "",
-      descriptionEn: item.successorConceptName ? `Successor: ${item.successorConceptName}` : "SAP repository object",
+      descriptionEn: `SAP state: ${(item.state ?? "unknown").replace(/([A-Z])/g, " $1").replace(/^./, (value) => value.toUpperCase())}`,
       descriptionKo: `${product} / ${system}`,
       state: item.level === "A" ? "RELEASED" : item.level === "B" ? "CLASSIC_API" : "INTERNAL",
       level: item.level,
@@ -42,7 +42,10 @@ export async function GET(request: NextRequest) {
       packageName: "",
       applicationComponent: item.applicationComponent ?? "",
       warning: item.level === "C" ? "Released API conversion should be reviewed." : "Verify the API state in the target system.",
-      successors: [],
+      successors: (item.successors ?? []).map((successor) => {
+        const value = typeof successor === "string" ? { objectKey: successor } : successor;
+        return { name: value.objectKey ?? value.tadirObjName ?? "Unknown", type: value.objectType ?? value.tadirObject ?? "Object", level: "A", purpose: "SAP official successor", capability: "Reference", scope: "SAP Repository", rap: false };
+      }),
       releaseHistory: { [system.replace("S/4HANA ", "")]: item.state ?? "UNKNOWN" },
     }));
     return NextResponse.json({ query: q, product, release: system, total: all.length, counts: { A: all.filter((item) => item.level === "A").length, B: all.filter((item) => item.level === "B").length, C: all.filter((item) => item.level === "C").length }, items, expandedTerms: [] });
