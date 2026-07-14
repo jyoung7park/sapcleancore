@@ -3,12 +3,20 @@
   "name": "sapcleancore",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-07-14",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "assets": {
     "binding": "ASSETS",
     "directory": ".open-next/assets"
   },
   "observability": {
     "enabled": true
-  }
+  },
+  "routes": [
+    {
+      "pattern": "sapcleancore.petcut.ai/*",
+      "zone_name": "petcut.ai"
+    }
+  ]
 }
