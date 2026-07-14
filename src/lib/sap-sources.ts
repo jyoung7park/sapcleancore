@@ -47,13 +47,16 @@ export type SapSourceObject = {
 };
 
 export function mergeByLevel(releaseItems: SapSourceObject[], classificationItems: SapSourceObject[]) {
-  const result = new Map<string, SapSourceObject & { level: "A" | "B" | "C" }>();
+  const result = new Map<string, SapSourceObject & { level: "A" | "B" | "C" | "D" }>();
   const key = (item: SapSourceObject) => `${item.objectType ?? item.tadirObject ?? ""}|${item.objectKey ?? item.tadirObjName ?? ""}`;
   for (const item of releaseItems) {
     if (item.state === "released") result.set(key(item), { ...item, level: "A" });
   }
   for (const item of classificationItems) {
     if (item.state === "classicAPI" && !result.has(key(item))) result.set(key(item), { ...item, level: "B" });
+  }
+  for (const item of releaseItems) {
+    if (item.state === "deprecated" && !result.has(key(item))) result.set(key(item), { ...item, level: "D" });
   }
   for (const item of [...releaseItems, ...classificationItems]) {
     if (["notToBeReleased", "notToBeReleasedStable", "noAPI"].includes(item.state ?? "")) {

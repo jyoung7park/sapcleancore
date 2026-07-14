@@ -20,6 +20,7 @@ export interface SapObject {
   descriptionEn: string;
   descriptionKo: string;
   state: ReleaseState;
+  rawState?: string;
   level: CleanCoreLevel;
   product: string;
   release: string;

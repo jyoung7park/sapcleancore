@@ -6,7 +6,7 @@ export function ObjectDetail({ object, onClose }: { object: SapObject; onClose: 
   return <div className="detail-backdrop" onMouseDown={onClose}>
     <aside className="detail" onMouseDown={(event) => event.stopPropagation()}>
       <div className="detail-head"><div><div className="eyebrow">OBJECT DETAIL · {object.objectType}</div><h2>{object.objectName}</h2><p>{object.descriptionEn}</p></div><button className="icon-button" onClick={onClose} aria-label="닫기"><X size={20} /></button></div>
-      <StatusBadge state={object.state} level={object.level} />
+      <StatusBadge state={object.state} level={object.level} rawState={object.rawState} />
       <p className="ko-description">{object.descriptionKo} <small>비공식 번역</small></p>
 
       <section><h3><Database size={16} /> 기본 정보</h3><dl className="facts">
