@@ -1,0 +1,70 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+
+model SapObject {
+  id                   BigInt                  @id @default(autoincrement())
+  objectKey            String                  @map("object_key") @db.VarChar(255)
+  objectName           String                  @map("object_name") @db.VarChar(120)
+  objectType           String                  @map("object_type") @db.VarChar(20)
+  tadirObject          String?                 @map("tadir_object") @db.VarChar(20)
+  tadirObjName         String?                 @map("tadir_obj_name") @db.VarChar(120)
+  descriptionEn        String?                 @map("description_en")
+  descriptionKo        String?                 @map("description_ko")
+  packageName          String?                 @map("package_name") @db.VarChar(80)
+  applicationComponent String?                 @map("application_component") @db.VarChar(80)
+  classifications      ObjectClassification[]
+  successors           Successor[]             @relation("SourceObject")
+  createdAt            DateTime                @default(now()) @map("created_at")
+  updatedAt            DateTime                @updatedAt @map("updated_at")
+  @@unique([objectKey, objectType])
+  @@map("objects")
+}
+
+model ObjectClassification {
+  id                BigInt    @id @default(autoincrement())
+  objectId          BigInt    @map("object_id")
+  object            SapObject @relation(fields: [objectId], references: [id], onDelete: Cascade)
+  productCode       String    @map("product_code") @db.VarChar(50)
+  releaseVersion    String    @map("release_version") @db.VarChar(30)
+  releaseState      String    @map("release_state") @db.VarChar(30)
+  cleanCoreLevel    String?   @map("clean_core_level") @db.Char(1)
+  deprecated        Boolean   @default(false)
+  sourceFile        String?   @map("source_file")
+  sourceCommit      String?   @map("source_commit") @db.VarChar(64)
+  @@unique([objectId, productCode, releaseVersion])
+  @@map("object_classifications")
+}
+
+model Successor {
+  id                 BigInt    @id @default(autoincrement())
+  sourceObjectId     BigInt    @map("source_object_id")
+  sourceObject       SapObject @relation("SourceObject", fields: [sourceObjectId], references: [id], onDelete: Cascade)
+  successorName      String    @map("successor_name") @db.VarChar(255)
+  successorType      String?   @map("successor_type") @db.VarChar(30)
+  relationType       String?   @map("relation_type") @db.VarChar(30)
+  recommendationText String?   @map("recommendation_text")
+  productCode        String?   @map("product_code") @db.VarChar(50)
+  releaseVersion     String?   @map("release_version") @db.VarChar(30)
+  @@map("successors")
+}
+
+model SearchSynonym {
+  id       BigInt  @id @default(autoincrement())
+  termKo   String  @map("term_ko") @db.VarChar(150)
+  termEn   String  @map("term_en") @db.VarChar(150)
+  category String? @db.VarChar(50)
+  weight   Decimal @default(1.0) @db.Decimal(3, 2)
+  @@map("search_synonyms")
+}
+
+model DataVersion {
+  id          BigInt    @id @default(autoincrement())
+  sourceName  String    @map("source_name") @db.VarChar(100)
+  sourceFile  String    @map("source_file")
+  gitCommit   String?   @map("git_commit") @db.VarChar(64)
+  importedAt  DateTime  @default(now()) @map("imported_at")
+  recordCount Int       @map("record_count")
+  status      String    @db.VarChar(20)
+  checksum    String?   @db.VarChar(128)
+  @@map("data_versions")
+}
