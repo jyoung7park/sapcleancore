@@ -24,6 +24,16 @@ export function Explorer() {
   const [exporting, setExporting] = useState(false);
   const [exportLevel, setExportLevel] = useState<"ALL" | "A" | "B" | "C">("ALL");
   const [counts, setCounts] = useState({ A: 0, B: 0, C: 0 });
+  const [theme, setTheme] = useState<"dark" | "light" | "blue">("dark");
+
+  useEffect(() => {
+    const savedTheme = window.localStorage.getItem("ccoe-theme");
+    if (savedTheme === "dark" || savedTheme === "light" || savedTheme === "blue") setTheme(savedTheme);
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("ccoe-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     const urlQuery = new URLSearchParams(window.location.search).get("q");
@@ -57,8 +67,8 @@ export function Explorer() {
     }
   }
 
-  return <div className="app-shell">
-    <header><a className="brand" href="/"><span className="brand-mark"><Box size={19} /></span><span><b>CCOE</b><small>Clean Core Object Explorer</small></span></a><nav className={mobileOpen ? "open" : ""}><button className="active" onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); }}>객체 검색</button><button onClick={() => { runSearch("Successor"); setMobileOpen(false); }}>Successor</button><button onClick={() => { runSearch(""); setMobileOpen(false); }}>릴리스 비교</button><button onClick={() => { setHelpOpen(true); setMobileOpen(false); }}>Clean Core 가이드</button></nav><div className="header-actions"><span className="data-live"><i /> PCE 2025</span><button className="icon-button" onClick={() => setHelpOpen(true)} aria-label="도움말 열기"><CircleHelp size={19} /></button><button className="mobile-menu" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-label="메뉴 열기"><Menu size={20} /></button></div></header>
+  return <div className="app-shell" data-theme={theme}>
+    <header><a className="brand" href="/"><span className="brand-mark"><Box size={19} /></span><span><b>CCOE</b><small>Clean Core Object Explorer</small></span></a><nav className={mobileOpen ? "open" : ""}><button className="active" onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); }}>객체 검색</button><button onClick={() => { runSearch("Successor"); setMobileOpen(false); }}>Successor</button><button onClick={() => { runSearch(""); setMobileOpen(false); }}>릴리스 비교</button><button onClick={() => { setHelpOpen(true); setMobileOpen(false); }}>Clean Core 가이드</button></nav><div className="header-actions"><label className="theme-picker"><span>??</span><select value={theme} onChange={(event) => setTheme(event.target.value as "dark" | "light" | "blue")} aria-label="?? ??"><option value="dark">Dark</option><option value="light">Light</option><option value="blue">SAP Blue</option></select></label><span className="data-live"><i /> PCE 2025</span><button className="icon-button" onClick={() => setHelpOpen(true)} aria-label="도움말 열기"><CircleHelp size={19} /></button><button className="mobile-menu" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-label="메뉴 열기"><Menu size={20} /></button></div></header>
 
     <main>
       <section className={`hero ${searched ? "compact" : ""}`}>
