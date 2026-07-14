@@ -36,3 +36,32 @@ export function expandQuery(query: string) {
   }
   return [...expanded];
 }
+
+
+export function getKoreanKeywordDetails(item: {
+  objectKey?: string;
+  tadirObjName?: string;
+  objectType?: string;
+  applicationComponent?: string;
+  softwareComponent?: string;
+  successorConceptName?: string;
+  successors?: Array<string | { objectKey?: string; tadirObjName?: string }>;
+}) {
+  const searchable = [
+    item.objectKey, item.tadirObjName, item.objectType, item.applicationComponent,
+    item.softwareComponent, item.successorConceptName,
+    ...(item.successors ?? []).map((value) => typeof value === "string" ? value : value.objectKey ?? value.tadirObjName),
+  ].filter(Boolean).map((value) => normalize(String(value)));
+
+  const details: string[] = [];
+  for (const [primary, entry] of Object.entries(koreanBusinessTerms)) {
+    const matched = entry.searchTerms.filter((term) => {
+      const normalizedTerm = normalize(term);
+      return searchable.some((value) => value.includes(normalizedTerm) || normalizedTerm.includes(value));
+    });
+    if (matched.length) {
+      details.push(`\ub300\ud45c\uc5b4: ${primary} | \ub3d9\uc758\uc5b4: ${entry.aliases.join(", ")} | SAP \ub9e4\uce6d: ${matched.join(", ")}`);
+    }
+  }
+  return details.join(" / ") || "N/A";
+}

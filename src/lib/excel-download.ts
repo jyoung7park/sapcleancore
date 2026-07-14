@@ -1,5 +1,6 @@
 "use client";
 
+import { getKoreanKeywordDetails } from "@/lib/dictionary";
 import { getSapSourceUrls, mergeByLevel, type SapSourceObject, type SourceSelection } from "@/lib/sap-sources";
 
 const columns = [
@@ -8,7 +9,9 @@ const columns = [
   { header: "TADIR Name", key: "tadirObjName", width: 38 }, { header: "Object Type", key: "objectType", width: 14 },
   { header: "Application Component", key: "applicationComponent", width: 24 },
   { header: "Software Component", key: "softwareComponent", width: 22 },
-  { header: "Successor", key: "successor", width: 42 }, { header: "Labels (Official / Derived)", key: "labels", width: 52 },
+  { header: "Successor", key: "successor", width: 42 },
+  { header: "\uD55C\uAE00 \uAC80\uC0C9\uD0A4\uC6CC\uB4DC \uC0C1\uC138", key: "koreanKeywordDetails", width: 72 },
+  { header: "Labels (Official / Derived)", key: "labels", width: 52 },
   { header: "Label Source", key: "labelSource", width: 16 },
 ];
 
@@ -58,9 +61,9 @@ export async function downloadObjectsExcel(selection: SourceSelection, requested
     sheet.columns = columns;
     items.forEach((item) => {
       const label = formatLabels(item);
-      sheet.addRow({ ...item, successor: formatSuccessors(item), labels: label.value, labelSource: label.source });
+      sheet.addRow({ ...item, successor: formatSuccessors(item), koreanKeywordDetails: getKoreanKeywordDetails(item), labels: label.value, labelSource: label.source });
     });
-    sheet.autoFilter = { from: "A1", to: "K1" };
+    sheet.autoFilter = { from: "A1", to: "L1" };
     sheet.getRow(1).height = 28;
     sheet.getRow(1).eachCell((cell) => { cell.font = { bold: true, color: { argb: "FFFFFFFF" } }; cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1677B8" } }; });
     sheet.eachRow((row, rowNumber) => { if (rowNumber > 1) { row.alignment = { vertical: "top", wrapText: true }; const cell = row.getCell(1); cell.font = { bold: true }; cell.alignment = { horizontal: "center" }; } });
