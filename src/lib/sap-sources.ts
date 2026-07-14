@@ -75,3 +75,25 @@ export function mergeByLevel(releaseItems: SapSourceObject[], classificationItem
   }
   return [...result.values()];
 }
+
+
+export function scoreSapObject(item: SapSourceObject, query: string) {
+  const q = query.trim().toLowerCase();
+  if (!q) return 1;
+  const score = (value: string | undefined, exact: number, prefix: number, contains: number) => {
+    const normalized = value?.toLowerCase() ?? "";
+    return normalized === q ? exact : normalized.startsWith(q) ? prefix : normalized.includes(q) ? contains : 0;
+  };
+  let result = 0;
+  result = Math.max(result, score(item.objectKey, 1000, 900, 800));
+  result = Math.max(result, score(item.tadirObjName, 750, 650, 550));
+  result = Math.max(result, score(item.objectType, 500, 400, 300));
+  result = Math.max(result, score(item.applicationComponent, 450, 350, 250));
+  result = Math.max(result, score(item.softwareComponent, 425, 325, 225));
+  result = Math.max(result, score(item.successorConceptName, 400, 300, 200));
+  for (const successor of item.successors ?? []) {
+    const value = typeof successor === "string" ? successor : successor.objectKey ?? successor.tadirObjName;
+    result = Math.max(result, score(value, 375, 275, 175));
+  }
+  return result;
+}

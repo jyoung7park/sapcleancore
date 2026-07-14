@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeByLevel } from "./sap-sources";
+import { mergeByLevel, scoreSapObject } from "./sap-sources";
 
 describe("mergeByLevel", () => {
   it("keeps different function modules in the same function group", () => {
@@ -9,5 +9,13 @@ describe("mergeByLevel", () => {
     expect(result).toHaveLength(2);
     expect(result.find((item) => item.objectKey === "SD_VBAK_SINGLE_READ")?.level).toBe("C");
     expect(result.find((item) => item.objectKey === "OTHER_FUNCTION")?.level).toBe("B");
+  });
+
+  it("ranks exact object keys ahead of prefix and partial matches", () => {
+    const exact = { objectKey: "VBAK" };
+    const prefix = { objectKey: "VBAK_EXT" };
+    const partial = { objectKey: "Z_VBAK_COPY" };
+    expect(scoreSapObject(exact, "VBAK")).toBeGreaterThan(scoreSapObject(prefix, "VBAK"));
+    expect(scoreSapObject(prefix, "VBAK")).toBeGreaterThan(scoreSapObject(partial, "VBAK"));
   });
 });

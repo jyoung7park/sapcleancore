@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-import { getSapSourceUrls, mergeByLevel, type SapSourceObject } from "@/lib/sap-sources";
+import { getSapSourceUrls, mergeByLevel, scoreSapObject, type SapSourceObject } from "@/lib/sap-sources";
 
 async function loadJson(url: string, key: "objectReleaseInfo" | "objectClassifications") {
   const response = await fetch(url, { cache: "no-store" });
@@ -23,12 +23,12 @@ export async function GET(request: NextRequest) {
       loadJson(urls.classification, "objectClassifications"),
     ]);
     const all = mergeByLevel(releaseItems, classificationItems);
-    const filtered = all.filter((item) => {
-      if (level !== "ALL" && item.level !== level) return false;
-      if (!q) return true;
-      return [item.objectKey, item.tadirObjName, item.objectType, item.applicationComponent, item.softwareComponent, item.successorConceptName]
-        .some((value) => value?.toLowerCase().includes(q));
-    }).slice(0, 200);
+    const filtered = all
+      .map((item) => ({ item, score: scoreSapObject(item, q) }))
+      .filter(({ item, score }) => (level === "ALL" || item.level === level) && score > 0)
+      .sort((left, right) => right.score - left.score || (left.item.objectKey ?? "").localeCompare(right.item.objectKey ?? ""))
+      .slice(0, 200)
+      .map(({ item }) => item);
     const items = filtered.map((item) => ({
       objectKey: item.objectKey ?? item.tadirObjName ?? "",
       objectName: item.objectKey ?? item.tadirObjName ?? "",
