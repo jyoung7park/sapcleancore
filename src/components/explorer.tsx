@@ -41,7 +41,7 @@ export function Explorer() {
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams({ q: "", level: "ALL", system, product });
+    const params = new URLSearchParams({ q: "", level: "ALL", system, product, sourceVersion: "3" });
     fetch(`/api/v1/objects/search?${params}`).then((response) => response.json()).then((data) => {
       if (data.counts) setCounts(data.counts);
     });
@@ -49,7 +49,7 @@ export function Explorer() {
 
   async function runSearch(value: string, nextLevel = level, nextSystem = system, nextProduct = product) {
     setQuery(value); setLoading(true);
-    const params = new URLSearchParams({ q: value, level: nextLevel, system: nextSystem, product: nextProduct });
+    const params = new URLSearchParams({ q: value, level: nextLevel, system: nextSystem, product: nextProduct, sourceVersion: "3" });
     const response = await fetch(`/api/v1/objects/search?${params}`);
     const data = await response.json();
     setItems(data.items); setExpanded(data.expandedTerms); setSearched(true); setLoading(false);

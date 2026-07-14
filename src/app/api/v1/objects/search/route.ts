@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       }),
       releaseHistory: { [system.replace("S/4HANA ", "")]: item.state ?? "UNKNOWN" },
     }));
-    return NextResponse.json({ query: q, product, release: system, total: all.length, counts: { A: all.filter((item) => item.level === "A").length, B: all.filter((item) => item.level === "B").length, C: all.filter((item) => item.level === "C").length }, items, expandedTerms: [] });
+    return NextResponse.json({ query: q, product, release: system, total: all.length, counts: { A: all.filter((item) => item.level === "A").length, B: all.filter((item) => item.level === "B").length, C: all.filter((item) => item.level === "C").length }, items, expandedTerms: [] }, { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 502 });
   }
