@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import { getSapSourceUrls, mergeByLevel, type SapSourceObject } from "@/lib/sap-sources";
 
 async function loadJson(url: string, key: "objectReleaseInfo" | "objectClassifications") {
-  const response = await fetch(url, { next: { revalidate: 86400 } });
+  const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) throw new Error(`SAP source request failed: ${response.status}`);
   const data = await response.json();
   return data[key] as SapSourceObject[];
