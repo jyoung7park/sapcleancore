@@ -27,6 +27,7 @@ export function Explorer() {
   const [exportLevel, setExportLevel] = useState<"ALL" | "A" | "B" | "C">("ALL");
   const [counts, setCounts] = useState({ A: 0, B: 0, C: 0 });
   const [sourceTotal, setSourceTotal] = useState(0);
+  const [moduleStats, setModuleStats] = useState<Array<{ module: string; A: number; B: number; C: number; D: number; total: number }>>([]);
   const [theme, setTheme] = useState<"dark" | "light" | "blue">("dark");
 
   useEffect(() => {
@@ -48,6 +49,7 @@ export function Explorer() {
     fetch(`/api/v1/objects/search?${params}`).then((response) => response.json()).then((data) => {
       if (data.counts) setCounts(data.counts);
       if (data.sourceTotal) setSourceTotal(data.sourceTotal);
+      if (data.moduleStats) setModuleStats(data.moduleStats);
     });
   }, [system, product, release]);
 
@@ -86,6 +88,7 @@ export function Explorer() {
 
       {!searched ? <>
         <section className="summary"><div><span className="metric-label level-a">A</span><p><strong>{counts.A.toLocaleString()}</strong><small>Released APIs</small></p></div><div><span className="metric-label level-b">B</span><p><strong>{counts.B.toLocaleString()}</strong><small>Classic APIs</small></p></div><div><span className="metric-label level-c">C</span><p><strong>{counts.C.toLocaleString()}</strong><small>Internal Objects</small></p></div><div className="source"><Database size={19} /><p><strong>{sourceTotal.toLocaleString()}</strong><small>원본 행 · 중복 포함</small></p></div></section>
+        <section className="module-stats"><div className="module-stats-head"><div><span>MODULE STATISTICS</span><h2>??? Clean Core ??</h2></div><p>{product} ? {system} {release} ? ?? ?? ??</p></div><div className="stats-table-wrap"><table><thead><tr><th>Module</th><th>Level A</th><th>Level B</th><th>Level C</th><th>Level D</th><th>??</th><th>A ??</th></tr></thead><tbody>{moduleStats.map((row) => <tr key={row.module}><td><b>{row.module}</b></td><td className="stat-a">{row.A.toLocaleString()}</td><td className="stat-b">{row.B.toLocaleString()}</td><td className="stat-c">{row.C.toLocaleString()}</td><td className="stat-d">{row.D.toLocaleString()}</td><td>{row.total.toLocaleString()}</td><td>{row.total ? `${((row.A / row.total) * 100).toFixed(1)}%` : "0.0%"}</td></tr>)}</tbody></table></div></section>
         <section className="how"><div><span>01</span><Search /><h3>객체 또는 업무용어 검색</h3><p>ObjectKey, 객체명, 한글 업무용어를 모두 검색합니다.</p></div><div><span>02</span><ShieldCheck /><h3>Clean Core 상태 확인</h3><p>릴리스 상태를 Level A부터 D까지 명확하게 구분합니다.</p></div><div><span>03</span><Sparkles /><h3>Successor로 전환</h3><p>대체 가능한 CDS, RAP BO, Remote API를 비교합니다.</p></div></section>
       </> : <section className="results">
         <div className="result-head"><div><span>SEARCH RESULTS</span><h2>“{query}” <small>{items.length}개 객체</small></h2>{expanded.length > 0 && <p>검색 확장: {expanded.slice(0, 4).join(" · ")}</p>}</div><div className="filters"><select value={level} onChange={(event) => changeLevel(event.target.value)}><option value="ALL">모든 Level</option><option value="A">Level A</option><option value="B">Level B</option><option value="C">Level C</option></select><button onClick={() => items[0] && setSelected(items[0])} disabled={!items.length}><GitCompareArrows size={15} /> 릴리스 비교</button></div></div>

@@ -25,6 +25,15 @@ export async function GET(request: NextRequest) {
       loadJson(urls.classification, "objectClassifications"),
     ]);
     const all = mergeByLevel(releaseItems, classificationItems);
+    const moduleMap = new Map<string, { module: string; A: number; B: number; C: number; D: number; total: number }>();
+    for (const item of all) {
+      const module = item.applicationComponent?.split("-")[0] || "ETC";
+      const stats = moduleMap.get(module) ?? { module, A: 0, B: 0, C: 0, D: 0, total: 0 };
+      stats[item.level] += 1;
+      stats.total += 1;
+      moduleMap.set(module, stats);
+    }
+    const moduleStats = [...moduleMap.values()].sort((left, right) => right.total - left.total || left.module.localeCompare(right.module));
     const expandedTerms = expandQuery(q);
     const filtered = all
       .map((item) => ({ item, score: Math.max(...expandedTerms.map((term, index) => Math.max(0, scoreSapObject(item, term) - index * 10))) }))
@@ -54,7 +63,7 @@ export async function GET(request: NextRequest) {
       }),
       releaseHistory: { [system.replace("S/4HANA ", "")]: item.state ?? "UNKNOWN" },
     }));
-    return NextResponse.json({ query: q, product, release: selectedRelease, total: all.length, sourceTotal: releaseItems.length + classificationItems.length, counts: { A: all.filter((item) => item.level === "A").length, B: all.filter((item) => item.level === "B").length, C: all.filter((item) => item.level === "C").length }, items, expandedTerms: expandedTerms.slice(1) }, { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } });
+    return NextResponse.json({ query: q, product, release: selectedRelease, total: all.length, sourceTotal: releaseItems.length + classificationItems.length, moduleStats, counts: { A: all.filter((item) => item.level === "A").length, B: all.filter((item) => item.level === "B").length, C: all.filter((item) => item.level === "C").length }, items, expandedTerms: expandedTerms.slice(1) }, { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 502 });
   }
