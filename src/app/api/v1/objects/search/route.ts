@@ -29,7 +29,6 @@ export async function GET(request: NextRequest) {
       .map((item) => ({ item, score: Math.max(...expandedTerms.map((term, index) => Math.max(0, scoreSapObject(item, term) - index * 10))) }))
       .filter(({ item, score }) => (level === "ALL" || item.level === level) && score > 0)
       .sort((left, right) => right.score - left.score || (left.item.objectKey ?? "").localeCompare(right.item.objectKey ?? ""))
-      .slice(0, 200)
       .map(({ item }) => item);
     const items = filtered.map((item) => ({
       objectKey: item.objectKey ?? item.tadirObjName ?? "",
