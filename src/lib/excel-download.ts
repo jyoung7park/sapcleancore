@@ -71,6 +71,6 @@ export async function downloadObjectsExcel(selection: SourceSelection, requested
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer as BlobPart], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url;
-  anchor.download = `CCOE_${selection.product.replaceAll(" ", "_")}_${selection.system.replaceAll("/", "-").replaceAll(" ", "_")}_${requestedLevel}.xlsx`;
+  anchor.download = `CCOE_${selection.product.replaceAll(" ", "_")}_${selection.system.replaceAll("/", "-").replaceAll(" ", "_")}_${selection.release}_${requestedLevel}.xlsx`;
   anchor.click(); URL.revokeObjectURL(url);
 }

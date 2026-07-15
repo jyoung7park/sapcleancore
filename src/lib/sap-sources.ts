@@ -1,30 +1,32 @@
 export type SourceSelection = {
   system: string;
   product: string;
+  release: string;
 };
 
 const base = "https://raw.githubusercontent.com/SAP/abap-atc-cr-cv-s4hc/main/src";
 
-const releaseFiles: Record<string, Record<string, string>> = {
+const releaseFiles: Record<string, Record<string, Record<string, string>>> = {
   "Private Edition": {
-    "S/4HANA 2022": "objectReleaseInfo_PCE2022_2.json",
-    "S/4HANA 2023": "objectReleaseInfo_PCE2023_3.json",
-    "S/4HANA 2025": "objectReleaseInfo_PCE2025_1.json",
+    "S/4HANA 2025": { "SP1": "objectReleaseInfo_PCE2025_1.json", "SP0": "objectReleaseInfo_PCE2025_0.json" },
+    "S/4HANA 2023": { "SP3": "objectReleaseInfo_PCE2023_3.json", "SP2": "objectReleaseInfo_PCE2023_2.json", "SP1": "objectReleaseInfo_PCE2023_1.json", "SP0": "objectReleaseInfo_PCE2023_0.json" },
+    "S/4HANA 2022": { "SP2": "objectReleaseInfo_PCE2022_2.json", "SP1": "objectReleaseInfo_PCE2022_1.json", "SP0": "objectReleaseInfo_PCE2022.json" },
   },
   "Public Edition": {
-    "S/4HANA 2022": "archive/objectReleaseInfo_2208.json",
-    "S/4HANA 2023": "archive/objectReleaseInfo_2308.json",
-    "S/4HANA 2025": "objectReleaseInfoLatest.json",
+    "S/4HANA 2025": { "2508": "archive/objectReleaseInfo_2508.json", "2502": "archive/objectReleaseInfo_2502.json" },
+    "S/4HANA 2023": { "2308": "archive/objectReleaseInfo_2308.json", "2302": "archive/objectReleaseInfo_2302.json" },
+    "S/4HANA 2022": { "2208": "archive/objectReleaseInfo_2208.json" },
   },
 };
 
+export function getAvailableReleases(product: string, system: string) {
+  return Object.keys(releaseFiles[product]?.[system] ?? {});
+}
+
 export function getSapSourceUrls(selection: SourceSelection) {
-  const file = releaseFiles[selection.product]?.[selection.system];
+  const file = releaseFiles[selection.product]?.[selection.system]?.[selection.release];
   if (!file) throw new Error("Unsupported SAP source selection");
-  return {
-    release: `${base}/${file}`,
-    classification: `${base}/objectClassifications_SAP.json`,
-  };
+  return { release: `${base}/${file}`, classification: `${base}/objectClassifications_SAP.json` };
 }
 
 export type SapSourceObject = {
@@ -56,10 +58,10 @@ export function mergeByLevel(releaseItems: SapSourceObject[], classificationItem
     if (item.state === "classicAPI" && !result.has(key(item))) result.set(key(item), { ...item, level: "B" });
   }
   for (const item of releaseItems) {
-    if (item.state === "deprecated" && !result.has(key(item))) result.set(key(item), { ...item, level: "D" });
+    if (item.state === "deprecated" && !result.has(key(item))) result.set(key(item), { ...item, level: "B" });
   }
   for (const item of [...releaseItems, ...classificationItems]) {
-    if (["notToBeReleased", "notToBeReleasedStable", "noAPI"].includes(item.state ?? "")) {
+    if (["notToBeReleased", "notToBeReleasedStable"].includes(item.state ?? "")) {
       const itemKey = key(item);
       const existing = result.get(itemKey);
       if (!existing) {
@@ -75,6 +77,9 @@ export function mergeByLevel(releaseItems: SapSourceObject[], classificationItem
         });
       }
     }
+  }
+  for (const item of classificationItems) {
+    if (item.state === "noAPI" && !result.has(key(item))) result.set(key(item), { ...item, level: "D" });
   }
   return [...result.values()];
 }

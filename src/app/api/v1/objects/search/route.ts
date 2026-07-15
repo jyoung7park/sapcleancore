@@ -17,8 +17,9 @@ export async function GET(request: NextRequest) {
   const level = request.nextUrl.searchParams.get("level") ?? "ALL";
   const system = request.nextUrl.searchParams.get("system") ?? "S/4HANA 2025";
   const product = request.nextUrl.searchParams.get("product") ?? "Private Edition";
+  const selectedRelease = request.nextUrl.searchParams.get("release") ?? "SP1";
   try {
-    const urls = getSapSourceUrls({ system, product });
+    const urls = getSapSourceUrls({ system, product, release: selectedRelease });
     const [releaseItems, classificationItems] = await Promise.all([
       loadJson(urls.release, "objectReleaseInfo"),
       loadJson(urls.classification, "objectClassifications"),
@@ -37,12 +38,12 @@ export async function GET(request: NextRequest) {
       tadirObject: item.tadirObject ?? "",
       tadirObjName: item.tadirObjName ?? "",
       descriptionEn: `SAP state: ${(item.state ?? "unknown").replace(/([A-Z])/g, " $1").replace(/^./, (value) => value.toUpperCase())}`,
-      descriptionKo: `${product} / ${system}`,
-      state: item.level === "A" ? "RELEASED" : item.level === "B" ? "CLASSIC_API" : item.level === "D" ? "DEPRECATED" : "INTERNAL",
+      descriptionKo: `${product} / ${system} ${selectedRelease}`,
+      state: item.level === "A" ? "RELEASED" : item.level === "B" ? "CLASSIC_API" : item.level === "D" ? "NOT_RECOMMENDED" : "INTERNAL",
       rawState: item.state,
       level: item.level,
       product: product === "Private Edition" ? "PCE" : "Public",
-      release: system.replace("S/4HANA ", ""),
+      release: `${system.replace("S/4HANA ", "")} ${selectedRelease}`,
       softwareComponent: item.softwareComponent ?? "",
       packageName: "",
       applicationComponent: item.applicationComponent ?? "",
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
       }),
       releaseHistory: { [system.replace("S/4HANA ", "")]: item.state ?? "UNKNOWN" },
     }));
-    return NextResponse.json({ query: q, product, release: system, total: all.length, counts: { A: all.filter((item) => item.level === "A").length, B: all.filter((item) => item.level === "B").length, C: all.filter((item) => item.level === "C").length }, items, expandedTerms: expandedTerms.slice(1) }, { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } });
+    return NextResponse.json({ query: q, product, release: selectedRelease, total: all.length, sourceTotal: releaseItems.length + classificationItems.length, counts: { A: all.filter((item) => item.level === "A").length, B: all.filter((item) => item.level === "B").length, C: all.filter((item) => item.level === "C").length }, items, expandedTerms: expandedTerms.slice(1) }, { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 502 });
   }

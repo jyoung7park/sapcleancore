@@ -6,6 +6,7 @@ import { ObjectDetail } from "./object-detail";
 import { StatusBadge } from "./status-badge";
 import type { SapObject } from "@/types/object";
 import { downloadObjectsExcel } from "@/lib/excel-download";
+import { getAvailableReleases } from "@/lib/sap-sources";
 
 const quickTerms = ["판매오더", "구매오더", "자재 이동", "회계전표", "메일"];
 
@@ -21,9 +22,11 @@ export function Explorer() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [system, setSystem] = useState("S/4HANA 2025");
   const [product, setProduct] = useState("Private Edition");
+  const [release, setRelease] = useState("SP1");
   const [exporting, setExporting] = useState(false);
   const [exportLevel, setExportLevel] = useState<"ALL" | "A" | "B" | "C">("ALL");
   const [counts, setCounts] = useState({ A: 0, B: 0, C: 0 });
+  const [sourceTotal, setSourceTotal] = useState(0);
   const [theme, setTheme] = useState<"dark" | "light" | "blue">("dark");
 
   useEffect(() => {
@@ -41,15 +44,16 @@ export function Explorer() {
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams({ q: "", level: "ALL", system, product, sourceVersion: "3" });
+    const params = new URLSearchParams({ q: "", level: "ALL", system, product, release, sourceVersion: "6" });
     fetch(`/api/v1/objects/search?${params}`).then((response) => response.json()).then((data) => {
       if (data.counts) setCounts(data.counts);
+      if (data.sourceTotal) setSourceTotal(data.sourceTotal);
     });
-  }, [system, product]);
+  }, [system, product, release]);
 
-  async function runSearch(value: string, nextLevel = level, nextSystem = system, nextProduct = product) {
+  async function runSearch(value: string, nextLevel = level, nextSystem = system, nextProduct = product, nextRelease = release) {
     setQuery(value); setLoading(true);
-    const params = new URLSearchParams({ q: value, level: nextLevel, system: nextSystem, product: nextProduct, sourceVersion: "3" });
+    const params = new URLSearchParams({ q: value, level: nextLevel, system: nextSystem, product: nextProduct, release: nextRelease, sourceVersion: "6" });
     const response = await fetch(`/api/v1/objects/search?${params}`);
     const data = await response.json();
     setItems(data.items); setExpanded(data.expandedTerms); setSearched(true); setLoading(false);
@@ -61,14 +65,14 @@ export function Explorer() {
   async function exportExcel() {
     setExporting(true);
     try {
-      await downloadObjectsExcel({ system, product }, exportLevel);
+      await downloadObjectsExcel({ system, product, release }, exportLevel);
     } finally {
       setExporting(false);
     }
   }
 
   return <div className="app-shell" data-theme={theme}>
-    <header><a className="brand" href="/"><span className="brand-mark"><Box size={19} /></span><span><b>CCOE</b><small>Clean Core Object Explorer</small></span></a><nav className={mobileOpen ? "open" : ""}><button className="active" onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); }}>객체 검색</button><button onClick={() => { runSearch("Successor"); setMobileOpen(false); }}>Successor</button><button onClick={() => { runSearch(""); setMobileOpen(false); }}>릴리스 비교</button><button onClick={() => { setHelpOpen(true); setMobileOpen(false); }}>Clean Core 가이드</button></nav><div className="header-actions"><label className="theme-picker"><span>테마</span><select value={theme} onChange={(event) => setTheme(event.target.value as "dark" | "light" | "blue")} aria-label="화면 테마"><option value="dark">Dark</option><option value="light">Light</option><option value="blue">SAP Blue</option></select></label><span className="data-live"><i /> {product === "Private Edition" ? "PCE" : "PUBLIC"} {system.replace("S/4HANA ", "")}</span><button className="icon-button" onClick={() => setHelpOpen(true)} aria-label="도움말 열기"><CircleHelp size={19} /></button><button className="mobile-menu" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-label="메뉴 열기"><Menu size={20} /></button></div></header>
+    <header><a className="brand" href="/"><span className="brand-mark"><Box size={19} /></span><span><b>CCOE</b><small>Clean Core Object Explorer</small></span></a><nav className={mobileOpen ? "open" : ""}><button className="active" onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setMobileOpen(false); }}>객체 검색</button><button onClick={() => { runSearch("Successor"); setMobileOpen(false); }}>Successor</button><button onClick={() => { runSearch(""); setMobileOpen(false); }}>릴리스 비교</button><button onClick={() => { setHelpOpen(true); setMobileOpen(false); }}>Clean Core 가이드</button></nav><div className="header-actions"><label className="theme-picker"><span>테마</span><select value={theme} onChange={(event) => setTheme(event.target.value as "dark" | "light" | "blue")} aria-label="화면 테마"><option value="dark">Dark</option><option value="light">Light</option><option value="blue">SAP Blue</option></select></label><span className="data-live"><i /> {product === "Private Edition" ? "PCE" : "PUBLIC"} {system.replace("S/4HANA ", "")} {release}</span><button className="icon-button" onClick={() => setHelpOpen(true)} aria-label="도움말 열기"><CircleHelp size={19} /></button><button className="mobile-menu" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-label="메뉴 열기"><Menu size={20} /></button></div></header>
 
     <main>
       <section className={`hero ${searched ? "compact" : ""}`}>
@@ -76,7 +80,7 @@ export function Explorer() {
         <h1>SAP 객체, <span>더 이상 추측하지 마세요.</span></h1>
         <p>Released 상태부터 Clean Core Level, 대체 API까지<br />하나의 검색으로 확인하세요.</p>
         <form className="search-box" onSubmit={submit}><Search size={23} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="VBAK, CL_BCS, BAPI, 판매오더 생성 등을 검색하세요" autoFocus /><button type="submit">검색 <ArrowRight size={17} /></button></form>
-        <div className="selectors"><label>시스템 <span className="select-wrap"><select value={system} onChange={(event) => { const value = event.target.value; setSystem(value); if (searched) runSearch(query, level, value, product); }}><option>S/4HANA 2025</option><option>S/4HANA 2023</option><option>S/4HANA 2022</option></select><ChevronDown size={14} /></span></label><label>제품 <span className="select-wrap"><select value={product} onChange={(event) => { const value = event.target.value; setProduct(value); if (searched) runSearch(query, level, system, value); }}><option>Private Edition</option><option>Public Edition</option></select><ChevronDown size={14} /></span></label><div className="excel-actions"><select value={exportLevel} onChange={(event) => setExportLevel(event.target.value as "ALL" | "A" | "B" | "C")} aria-label="Excel 다운로드 레벨"><option value="ALL">A·B·C 전체</option><option value="A">Level A만</option><option value="B">Level B만</option><option value="C">Level C만</option></select><button className="excel-download" onClick={exportExcel} disabled={exporting}><Download size={15} /> {exporting ? "SAP 원본 처리 중..." : "Excel 다운로드"}</button></div></div>
+        <div className="selectors"><label>??? <span className="select-wrap"><select value={system} onChange={(event) => { const value = event.target.value; const nextRelease = getAvailableReleases(product, value)[0]; setSystem(value); setRelease(nextRelease); if (searched) runSearch(query, level, value, product, nextRelease); }}><option>S/4HANA 2025</option><option>S/4HANA 2023</option><option>S/4HANA 2022</option></select><ChevronDown size={14} /></span></label><label>?? <span className="select-wrap"><select value={product} onChange={(event) => { const value = event.target.value; const nextRelease = getAvailableReleases(value, system)[0]; setProduct(value); setRelease(nextRelease); if (searched) runSearch(query, level, system, value, nextRelease); }}><option>Private Edition</option><option>Public Edition</option></select><ChevronDown size={14} /></span></label><label>Release <span className="select-wrap release-select"><select value={release} onChange={(event) => { const value = event.target.value; setRelease(value); if (searched) runSearch(query, level, system, product, value); }}>{getAvailableReleases(product, system).map((value) => <option key={value}>{value}</option>)}</select><ChevronDown size={14} /></span></label><div className="excel-actions"><select value={exportLevel} onChange={(event) => setExportLevel(event.target.value as "ALL" | "A" | "B" | "C")} aria-label="Excel ???? ??"><option value="ALL">A?B?C ??</option><option value="A">Level A?</option><option value="B">Level B?</option><option value="C">Level C?</option></select><button className="excel-download" onClick={exportExcel} disabled={exporting}><Download size={15} /> {exporting ? "SAP ?? ?? ?..." : "Excel ????"}</button></div></div>
         {!searched && <div className="quick"><span>빠른 검색</span>{quickTerms.map((term) => <button key={term} onClick={() => runSearch(term)}>{term}</button>)}</div>}
       </section>
 
