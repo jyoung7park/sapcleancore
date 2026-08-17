@@ -1,6 +1,7 @@
 import { ArrowUpRight, Check, Database, Layers3, X } from "lucide-react";
 import { StatusBadge } from "./status-badge";
 import type { SapObject } from "@/types/object";
+import { getSapHubSearchUrl, isReleasedObject } from "@/lib/sap-hub";
 
 export function ObjectDetail({ object, onClose }: { object: SapObject; onClose: () => void }) {
   return <div className="detail-backdrop" onMouseDown={onClose}>
@@ -19,6 +20,7 @@ export function ObjectDetail({ object, onClose }: { object: SapObject; onClose: 
 
       <section><div className="section-title"><h3>Successor · {object.successors.length}</h3></div>{object.successors.length ? <div className="successor-list">{object.successors.map((successor) => <article key={successor.name}><div className="successor-top"><strong>{successor.name}</strong><span>Level {successor.level}</span></div><p>{successor.purpose}</p><div className="chips"><em>{successor.type}</em><em>{successor.capability}</em><em>{successor.scope}</em>{successor.rap && <em><Check size={12} /> RAP</em>}</div></article>)}</div> : <p className="empty">등록된 Successor 정보가 없습니다.</p>}</section>
       <div className="detail-note"><strong>판단 전 확인</strong><p>{object.warning} 최종 개발 판단은 대상 시스템의 ADT API State와 ATC 검사 결과를 기준으로 확인하세요.</p></div>
+      {isReleasedObject(object) && <a className="external hub" href={getSapHubSearchUrl(object.objectKey)} target="_blank" rel="noreferrer">SAP Business Accelerator Hub에서 확인 <ArrowUpRight size={15} /></a>}
       <a className="external" href={`https://sap.github.io/abap-atc-cr-cv-s4hc/?q=${encodeURIComponent(object.objectKey)}`} target="_blank" rel="noreferrer">공식 Viewer에서 확인 <ArrowUpRight size={15} /></a>
     </aside>
   </div>;

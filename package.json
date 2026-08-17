@@ -8,9 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "build:cloudflare": "opennextjs-cloudflare build",
-    "preview:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "build:cloudflare": "next-on-pages",
+    "preview:cloudflare": "next-on-pages && wrangler pages dev .vercel/output/static --compatibility-flag=nodejs_compat",
+    "deploy:cloudflare": "next-on-pages && wrangler pages deploy .vercel/output/static --project-name=sapcleancore"
   },
   "dependencies": {
     "@prisma/client": "^6.11.1",
@@ -21,12 +21,14 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.16",
     "@opennextjs/cloudflare": "^1.20.1",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.3",
     "@types/react-dom": "^19.0.2",
     "prisma": "^6.11.1",
     "typescript": "^5.7.2",
+    "vercel": "^59.1.3",
     "vitest": "^2.1.8",
     "wrangler": "^4.110.0"
   },

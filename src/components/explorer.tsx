@@ -1,11 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { ArrowRight, BookOpen, Box, ChevronDown, CircleHelp, Database, GitCompareArrows, Download, Menu, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpen, Box, ChevronDown, CircleHelp, Database, GitCompareArrows, Download, Menu, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { ObjectDetail } from "./object-detail";
 import { StatusBadge } from "./status-badge";
 import type { SapObject } from "@/types/object";
 import { downloadObjectsExcel } from "@/lib/excel-download";
+import { getSapHubSearchUrl, isReleasedObject } from "@/lib/sap-hub";
 import { getAvailableReleases } from "@/lib/sap-sources";
 
 const quickTerms = ["판매오더", "구매오더", "자재 이동", "회계전표", "메일"];
@@ -92,7 +93,7 @@ export function Explorer() {
         <section className="how"><div><span>01</span><Search /><h3>객체 또는 업무용어 검색</h3><p>ObjectKey, 객체명, 한글 업무용어를 모두 검색합니다.</p></div><div><span>02</span><ShieldCheck /><h3>Clean Core 상태 확인</h3><p>릴리스 상태를 Level A부터 D까지 명확하게 구분합니다.</p></div><div><span>03</span><Sparkles /><h3>Successor로 전환</h3><p>대체 가능한 CDS, RAP BO, Remote API를 비교합니다.</p></div></section>
       </> : <section className="results">
         <div className="result-head"><div><span>SEARCH RESULTS</span><h2>“{query}” <small>{items.length}개 객체</small></h2>{expanded.length > 0 && <p>검색 확장: {expanded.slice(0, 4).join(" · ")}</p>}</div><div className="filters"><select value={level} onChange={(event) => changeLevel(event.target.value)}><option value="ALL">모든 Level</option><option value="A">Level A</option><option value="B">Level B</option><option value="C">Level C</option></select><button onClick={() => items[0] && setSelected(items[0])} disabled={!items.length}><GitCompareArrows size={15} /> 릴리스 비교</button></div></div>
-        {loading ? <div className="loading">Repository를 검색하고 있습니다...</div> : items.length ? <div className="object-list">{items.map((object) => <article className="object-card" key={object.objectKey} onClick={() => setSelected(object)}><div className="object-icon">{object.objectType}</div><div className="object-main"><div className="object-title"><h3>{object.objectName}</h3><StatusBadge state={object.state} level={object.level} rawState={object.rawState} /></div><p>{object.descriptionEn}</p><small>{object.descriptionKo} · {object.applicationComponent} · {object.softwareComponent}</small>{object.successors.length > 0 && <div className="successor-preview"><b>SUCCESSOR</b>{object.successors.map((successor) => <span key={successor.name}>{successor.name} <em>A</em></span>)}</div>}</div><ArrowRight className="card-arrow" size={19} /></article>)}</div> : <div className="no-results"><BookOpen size={30} /><h3>일치하는 객체가 없습니다.</h3><p>ObjectKey, TADIR 객체명 또는 다른 업무용어로 검색해 보세요.</p></div>}
+        {loading ? <div className="loading">Repository를 검색하고 있습니다...</div> : items.length ? <div className="object-list">{items.map((object) => { const released = isReleasedObject(object); return <article className="object-card" key={`${object.objectType}|${object.objectKey}`} onClick={() => setSelected(object)}><div className="object-icon">{object.objectType}</div><div className="object-main"><div className="object-title"><h3>{object.objectName}</h3><StatusBadge state={object.state} level={object.level} rawState={object.rawState} />{released && <a className="hub-hint" href={getSapHubSearchUrl(object.objectKey)} target="_blank" rel="noreferrer" title="SAP Business Accelerator Hub에서 열기" onClick={(event) => event.stopPropagation()}>SAP Hub <ArrowUpRight size={11} /></a>}</div><p>{object.descriptionEn}</p><small>{object.descriptionKo} · {object.applicationComponent} · {object.softwareComponent}</small>{object.successors.length > 0 && <div className="successor-preview"><b>SUCCESSOR</b>{object.successors.map((successor) => <span key={successor.name}>{successor.name} <em>A</em></span>)}</div>}</div><ArrowRight className="card-arrow" size={19} /></article>; })}</div> : <div className="no-results"><BookOpen size={30} /><h3>일치하는 객체가 없습니다.</h3><p>ObjectKey, TADIR 객체명 또는 다른 업무용어로 검색해 보세요.</p></div>}
       </section>}
     </main>
     <footer><div><b>CCOE</b><span>본 서비스는 SAP SE와 제휴하거나 SAP SE의 보증을 받지 않습니다.</span></div><div><a href="https://github.com/SAP/abap-atc-cr-cv-s4hc" target="_blank">Source: SAP Cloudification Repository</a><span>Apache License 2.0</span></div></footer>

@@ -10,3 +10,4 @@ phases/**/phase*-output.json
 phases/**/step*-output.json
 
 .wrangler/
+.vercel/

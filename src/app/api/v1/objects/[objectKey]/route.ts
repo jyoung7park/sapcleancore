@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { objects } from "@/lib/data";
 
+export const runtime = "edge";
+
 export async function GET(_: Request, context: { params: Promise<{ objectKey: string }> }) {
   const { objectKey } = await context.params;
   const object = objects.find((item) => item.objectKey.toUpperCase() === decodeURIComponent(objectKey).toUpperCase());
